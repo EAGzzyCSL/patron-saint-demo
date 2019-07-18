@@ -58,3 +58,11 @@ vue init mpvue/mpvue-quickstart patron-saint-demo
 cd patron-saint-demo
 npm install
 ```
+
+### 小调整
+
+mpvue官方模板生成的项目还不能够直接运行，需要做一点小调整：
+
+- 填入从微信开发者给的touristappid: `wx492a011c5ecda41d`
+
+- 删掉app.json中的tabBar字段，因为项目里其实没有tab页面。
