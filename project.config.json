@@ -9,7 +9,7 @@
     },
     "miniprogramRoot": "dist/wx/",
     "compileType": "miniprogram",
-    "appid": "touristappid",
+    "appid": "wx492a011c5ecda41d",
     "projectname": "patron-saint-demo",
     "condition": {
         "search": {
