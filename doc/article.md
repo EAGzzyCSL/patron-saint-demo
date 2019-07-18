@@ -44,3 +44,17 @@ VirtualModuleWebpackPlugin做到了这点，它通过魔法操作实现了把不
 它使用了webpack的未开放api，将virtual文件作为缓存来欺骗webpack的resolve，虽然相关api可能会随着webpack升级而不可用，但目前来看这个问题并不需要特别担心，尤其是mpvue还停留在webpack3时代止步不前的情况下。
 
 现在锤子已经就绪，便只差一个钉子来试试手。我创建了[repo](https://github.com/EAGzzyCSL/patron-saint-demo)记录了使用VirtualModuleWebpackPlugin改造mpvue项目全过程可供参看，且下面的文章内容会随commit一一增加。
+
+## 初始化一个mpvue项目
+
+> 我为这个项目起了一个名字：PatronSaint，后面会解释命名的由来。
+
+### 套路三连
+
+使用官方提供的mpvue-quickstart模板：
+
+```bash
+vue init mpvue/mpvue-quickstart patron-saint-demo
+cd patron-saint-demo
+npm install
+```
