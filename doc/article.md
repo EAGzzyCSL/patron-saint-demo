@@ -90,3 +90,9 @@ pages
 ```
 
 这对代码的快速定位非常不友好，所以我更倾向官方示例中得`pages/Index/Index`格式，且由于vue组件名通常为是PascalCase，所以这里需要重命名index.vue为Index.vue
+
+### 添加第二个页面
+
+只有一个页面的情况下不存在copy套路代码的问题，所以再添加一个页面`Mine`以供测试。
+
+因为前面修改了页面路径的格式，所以魔改了一下`webpack.base.conf.js`中的`pagesEntry`逻辑，理论上app.json也可由构建时生成，但这个不是重点所以选择手动修改。
