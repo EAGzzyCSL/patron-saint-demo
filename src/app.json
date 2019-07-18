@@ -1,6 +1,7 @@
 {
   "pages": [
-    "pages/Index/Index"
+    "pages/Index/Index",
+    "pages/Mine/Mine"
   ],
   "window": {
     "backgroundTextStyle": "light",

@@ -6,26 +6,24 @@ var webpack = require('webpack')
 var merge = require('webpack-merge')
 var vueLoaderConfig = require('./vue-loader.conf')
 var MpvuePlugin = require('webpack-mpvue-asset-plugin')
-var glob = require('glob')
 var CopyWebpackPlugin = require('copy-webpack-plugin')
-var relative = require('relative')
 
 function resolve (dir) {
   return path.join(__dirname, '..', dir)
 }
 
-function getEntry (rootSrc) {
-  var map = {};
-  glob.sync(rootSrc + '/pages/**/Index.js')
-  .forEach(file => {
-    var key = relative(rootSrc, file).replace('.js', '');
-    map[key] = file;
-  })
-   return map;
-}
+const pages = [
+  'Index',
+  'Mine',
+]
 
 const appEntry = { app: resolve('./src/main.js') }
-const pagesEntry = getEntry(resolve('./src'), 'pages/**/main.js')
+
+const pagesEntry = pages.reduce((acc, pageName) => ({
+  ...acc,
+  [`pages/${pageName}/${pageName}`] : resolve(`./src/pages/${pageName}/${pageName}.js`), 
+}), {})
+
 const entry = Object.assign({}, appEntry, pagesEntry)
 
 let baseWebpackConfig = {
