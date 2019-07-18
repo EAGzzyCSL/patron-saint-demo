@@ -70,3 +70,23 @@ mpvue官方模板生成的项目还不能够直接运行，需要做一点小调
 ### 删除无关代码
 
 通过模板生成的项目中有一些组件和utils方法是做示例之用，这里将它们都删掉使页面保持最小以方便改造。
+
+### 修改页面命名
+
+微信小程序官方示例中页面路径都是`pages/Index/Index`格式，而mpvue下使用了`pages/index/main`格式。命名本身无大所谓，不过如果将来项目放弃mpvue框架转而使用原生开发，为了兼容旧有得页面路径，`pages/index/main`这种格式下代码文件的组织就会充斥着main。
+
+```text
+pages
+├── index
+│   ├── main.js
+│   ├── main.json
+│   ├── main.wxml
+│   └── main.wxss
+└── mine
+    ├── main.js
+    ├── main.json
+    ├── main.wxml
+    └── main.wxss
+```
+
+这对代码的快速定位非常不友好，所以我更倾向官方示例中得`pages/Index/Index`格式，且由于vue组件名通常为是PascalCase，所以这里需要重命名index.vue为Index.vue
