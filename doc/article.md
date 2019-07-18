@@ -96,3 +96,56 @@ pages
 只有一个页面的情况下不存在copy套路代码的问题，所以再添加一个页面`Mine`以供测试。
 
 因为前面修改了页面路径的格式，所以魔改了一下`webpack.base.conf.js`中的`pagesEntry`逻辑，理论上app.json也可由构建时生成，但这个不是重点所以选择手动修改。
+
+## 使用VirtualModuleWebpackPlugin消灭main.js
+
+安装`virtual-module-webpack-plugin`
+
+```bash
+npm install virtual-module-webpack-plugin --SD
+```
+
+### 使用方法
+
+```javascript
+plugins: [
+  new VirtualModulePlugin({
+    // 一个src下根本不存在的virtual文件
+    moduleName: 'src/mysettings.json',
+    // 你希望这个virtual文件的内容是什么
+    contents: JSON.stringify({ greeting: 'Hello!' })
+  })
+]
+```
+
+基本的使用方法如上，此外contents还可以为一个对象或者时function。
+
+通常情况下，如果构建时引用了不存在的模块则会导致webpack报错，更别提使用不存在的文件作为entry，而VirtualModulePlugin的作用便是欺骗webpack该文件是存在的，且内容为`...`。
+
+### 干掉main.js
+
+(main.js只是用来代指每个页面下的入口js文件，由于mpvue构建后的页面路径由main.js的文件名决定，所以为了实现`/pages/Index/Index`格式的路径，main.js需要在每个页面下重命名为对应页面的名字)
+
+对`webpack.base.conf.js`做如下修改
+
+```javascript
+const VirtualModuleWebpackPlugin = require('virtual-module-webpack-plugin')
+
+// 在plugins中添加
+...pages.map(pageName => new VirtualModuleWebpackPlugin({
+  moduleName: `./src/pages/${pageName}/${pageName}.js`,
+  contents:
+`import Vue from 'vue'
+import App from './${pageName}.vue'
+const app = new Vue(App)
+app.$mount()
+`,
+```
+
+之所以缩进这么奇怪是因为webpack被VirtualModuleWebpackPlugin欺骗，认为这就是一个正常得代码文件，所以相关的eslint插件依然会对它做lint检查。
+
+通过上面的配置，`Index.js`和`Mine.js`在构建中已经由VirtualModuleWebpackPlugin负责提供，因此可以删掉真实文件系统中的`Index.js`和`Mine.js`，并执行`npm start`进行测试。
+
+如果webpack没有报错且构建后的代码可以正常运行，那么删掉main.js的目标至此达成。
+
+由此可以发现VirtualModuleWebpackPlugin十分适合解决webpack多entry构建且每个entry入口文件雷同情况下需要copy多个入口文件的场景。但需要注意的是，由于VirtualModuleWebpackPlugin是通过将virtual文件作为缓存提供给webpack，因此**virtual文件的变动并不会触发webpack的更新**，但实际开发中入口文件变动频率极低，所以这一问题可以忽略之。
