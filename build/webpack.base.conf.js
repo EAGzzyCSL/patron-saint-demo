@@ -16,14 +16,22 @@ function resolve (dir) {
   return path.join(__dirname, '..', dir)
 }
 
-const pages = [
-  'Index',
-  'Mine',
-]
+const genPageOptions = (options = {}) => ({
+  USE_ON_SHARE_APP_MESSAGE: false,
+  USE_ON_PAGE_SCROLL: false,
+  ...options,
+})
+
+const pages = {
+  Index: genPageOptions({
+    USE_ON_SHARE_APP_MESSAGE: true,
+  }),
+  Mine: genPageOptions({})
+}
 
 const appEntry = { app: resolve('./src/main.js') }
 
-const pagesEntry = pages.reduce((acc, pageName) => ({
+const pagesEntry = Object.keys(pages).reduce((acc, pageName) => ({
   ...acc,
   [`pages/${pageName}/${pageName}`] : resolve(`./src/pages/${pageName}/${pageName}.js`), 
 }), {})
@@ -110,14 +118,15 @@ let baseWebpackConfig = {
     ]
   },
   plugins: [
-    ...pages.map(pageName => new VirtualModuleWebpackPlugin({
+    ...Object.keys(pages).map(pageName => new VirtualModuleWebpackPlugin({
       moduleName: `./src/pages/${pageName}/PatronSaint.vue`,
       contents: replacer('PatronSaint.virtual.vue', {
         PAGE_NAME: pageName,
         KEBAB_PAGE_NAME: kebabCase(pageName),
+        ...pages[pageName],
       }),
     })),
-    ...pages.map(pageName => new VirtualModuleWebpackPlugin({
+    ...Object.keys(pages).map(pageName => new VirtualModuleWebpackPlugin({
       moduleName: `./src/pages/${pageName}/${pageName}.js`,
       contents: replacer('pageEntry.virtual.js'),
     })),
