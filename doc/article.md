@@ -209,3 +209,161 @@ const replacer = require('../src/patronSaint/replacer')
 再次执构建，一切ok。
 
 至此VirtualModuleWebpackPlugin便可以很方便在项目中使用，独立的virtual文件后续的维护与修改和普通js文件体验基本相同。
+
+## 探索使用virtualModulePlugin实现更多功能
+
+> 前文所述，只是为了替换一个仅几行的js文件，铺垫之长，操作之繁，实际仅仅减少了有限的代码，还留下了PatronSaint这样一个奇怪名字，且标题所说为减少套路代码，实际却时减少套路文件，大有标题党与为virtual而virtual之嫌。
+
+是的，如果仅是面对重复的main.js，不引入这一套操作而选择保持现状，并不会有太大的问题，与前面所说一致，入口文件的变动频率极低。
+
+但实际使用mpvue开发小程序时，还会遇到别的套路代码，回到开头的那张漫画中的需求场景。
+
+![丢出去](images/out.png)
+
+这个需求是我现编的，实际的新用户引导会如何表现我是并不了解的。
+
+虽然短袖青年被从楼上丢了下来，但在小程序中，这几乎是唯一的方案，只不过是可以把copy全部代码改为copy一个组件，本质还是离不开copy。因为小程序是没有dom能力的，动态添加dom是无法实现。
+
+### 没有dom能力的小程序
+
+前面说了，小程序是没有dom能力的🤷‍，意味着所有元素都要在编译时写入wxml模板中(摔！)，妈妈再也不用担心我记不住`document.createDocumentFragment`一系列api了🙂。
+
+乍一看似乎并不会有什么大问题，细一想如果没有dom能力则意味着传统的自定义dialog，toast等想法都成为了泡影，因为各类ui库中的toast等弹出都是通过动态添加元素来实现的。
+
+当然，小程序提供了原生的toast与dialog支持，但原生的可定制化程度低，涵盖场景少，比如toast最多只能显示7个字（现在扩展到两行了，不过得是不显示icon的情况下），就像下面这样子🤷‍。
+
+![有内鬼](images/youneigui.jpg)
+
+对此的解决方案就便是实现自定义的toast，因为无法动态添加元素，所以对于每个页面都事先把toast的标签写入页面中，当然如果这个页面不需要toast的展示那可以例外，但谁知道将来会不会有呢。
+
+```html
+<div class="page-xxx">
+  <!-- code of page -->
+  <customer-toast
+    v-if="showToast"
+  />
+</div>
+```
+
+toast没有交互所以代码较少，而dialog因为包含确认/关闭等操作会带来更多的代码，这些代码如果需要在每个页面之间copy，无疑是后期维护的带来灾难。
+
+或许自定义toast和dialog可以算作一种伪需求，且毕竟不是所有的页面都需要弹窗，但在微信小程序中如果选择了自定义导航栏则一定要把自定义导航栏的代码在每个页面中copy一份，这是由自定义导航栏的实现机制决定的。
+
+### 寻找解决方案
+
+借鉴一下高阶组件的玩法，其实就是搞个slot，定义一个`<father-of-page>`的组件，它内含了自定义的导航栏，并提供默认的slot用于展示页面内容，那么一个新的小程序页面只需这样创建即可：
+
+```html
+<template>
+  <father-of-page
+    @search="handleSearch"
+  >
+    <div class="page">
+      content of page
+    </div>
+  </father-of-page>
+</template>
+<script>
+export default {
+  methods: {
+    handleUpLoadDone() {
+      this.$emit('show-toast', 'upload done')
+    }
+  },
+}
+</script>
+```
+
+页面内容包裹在father-of-page下，toast，navgation等逻辑全部由father-of-page负责，页面需要toast的时候只需要向它的父级报告，就像这样:
+
+![喝奶茶](images/baba_naicha.jpg)
+
+错了，是这样:
+
+![弹toast](images/baba_toast.jpg)
+
+而导航栏上的交互，如导航栏上搜索框的回调事件等则由father-of-page将事件抛出交由页面处理。
+
+这种模式下，虽然每个页面还需要有少量套路代码，但基本解决了前面的大量copy代码问题，不过依然无法应对后期导航栏和页面扩展更多交互的需求。
+
+又很不幸的是，mpvue对于slot的支持非常糟糕，所以这种方案需要做一定的变通：
+
+```html
+<template>
+  <div class="page-wrapper">
+    <father-of-page
+      @search="handleSearch"
+    />
+    <div class="page">
+      content of page
+    </div>
+  </div>
+</template>
+```
+
+多增加了一个外层包裹的div和对应的css，重复量正在趋于不可接受。
+
+### 使用VirtualModuleWebpackPlugin将页面分离
+
+回到VirtualModuleWebpackPlugin，只要想办法把套路代码抽离到一个文件中，那就可以将它作为virtual文件加入构建。
+
+如果对每个页面我们只关注页面自身的私有逻辑，那么页面便可以作为一个单独的组件。
+
+而被main.js挂载的页面，姑且称为“页面爸爸”，内容如下：
+
+```html
+<template>
+  <div class="page-wrapper">
+    <father-of-page
+      @search="handleSearch"
+    />
+    <page-a $ref="page"/>
+  </div>
+</template>
+<script>
+export default {
+  methods: {
+    handleSearch() {
+      if (this.$refs.page.handleSearch) {
+        this.$refs.page.handleSearch
+      }
+    }
+  }
+}
+</script>
+```
+
+作为独立组件的页面内容部分：
+
+```html
+<template>
+  <div class="page">
+    content of page
+  </div>
+</template>
+<script>
+export default {
+  methods: {
+    handleSearch() {
+      // ...
+    }
+  }
+}
+</script>
+```
+
+可以看到，每个页面的“页面爸爸”之间除了引用的page组件不同外，其余部分都是相同的，所以具备了作为virtual文件的可行性。
+
+不过“页面爸爸”这个名字太过直白又不那么高大上，所以我取了PatronSaint（守护神的意思）这个名字，同样以p开头且具有相同的意思，就像唐僧取西经时围在头上的五方揭谛，六丁六甲、一十八位护教伽蓝一般，孙悟空被困黄眉怪的金饶中无奈下只能给揭谛emit了一个事件着其向玉帝求救。
+
+下面将通过实现navigation来完成页面与patronSaint分离。
+
+### 安装一下sass
+
+由于后面要写css了，所以先安装一下sass
+
+```bash
+npm install node-sass sass-loader --SD
+```
+
+mpvue的模板是有sass的对应配置的，但package.json中并没有把它作为依赖，所以这里安装后无需配置即可使用。
