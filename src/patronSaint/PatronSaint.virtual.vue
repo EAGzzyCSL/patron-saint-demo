@@ -105,7 +105,30 @@ export default {
     if (this.$refs.loginer.onMounted) {
       this.$refs.loginer.onMounted()
     }
-  }
+  },
+  methods: {
+    getPageFunction (functionName, or = () => {}) {
+      return (this.$refs.page && this.$refs.page[functionName]) || or
+    }
+  },
+  onPullDownRefresh (...args) {
+    this.getPageFunction('onPullDownRefresh')(...args)
+  },
+  onReachBottom (...args) {
+    this.getPageFunction('onReachBottom')(...args)
+  },
+  /* eslint-disable-next-line no-constant-condition */
+  ...($USE_ON_SHARE_APP_MESSAGE$ ? { // eslint-disable-line no-undef
+    onShareAppMessage (...args) {
+      return this.getPageFunction('onShareAppMessage')(...args)
+    }
+  } : {}),
+  /* eslint-disable-next-line no-constant-condition */
+  ...($USE_ON_PAGE_SCROLL$ ? { // eslint-disable-line no-undef
+    onPageScroll (...args) {
+      this.getPageFunction('onPageScroll')(...args)
+    }
+  } : {})
 }
 </script>
 <style lang="scss" scoped>

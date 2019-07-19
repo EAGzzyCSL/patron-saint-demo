@@ -18,6 +18,11 @@ import PatronSaintFactory from '@/patronSaint/PatronSaintFactory'
 
 export default PatronSaintFactory({
   methods: {
+    onShareAppMessage () {
+      return {
+        title: 'custom share title'
+      }
+    },
     handleToMine () {
       wx.navigateTo({
         url: '/pages/Mine/Mine'

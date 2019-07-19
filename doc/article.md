@@ -487,6 +487,26 @@ export default PatronSaintFactory({
 
 commit中的代码中还实现了一个全局的登录器，保障用户登录后（获取token后）才挂载页面，如果登录失败则展示重新登录按钮，这样页面只需要维护纯自身的逻辑而不再关心登录相关操作。
 
-### scroll
+### 处理scroll和share事件
 
-wip
+由于PatronSaint包裹在真正的页面之上，所以PatronSaint需要转发收到的onShareAppMessage给真正的页面。
+
+同时因为onShareAppMessage的存在与否决定了页面右上角点击后是否存在分享按钮，所以onShareAppMessage需要通过配置来设置存在与否。
+
+又根据微信的[说明](https://developers.weixin.qq.com/miniprogram/dev/reference/api/Page.html#onPageScroll-Object-object)，空的onPageScroll函数也会对页面性能造成影响，所以onPageScroll也通过配置控制开启与否。
+
+详见对应代码。
+
+## 结束
+
+至此标题所说的减少套路代码的操作已经实现，且看起来还算不错，但还是有一些注意事项需要了解：
+
+一是前面提到的virtual文件会被webpack视为缓存，所以再次修改不会触发web构建，在文件名中添加virtual也是为了当遇到“不触发webpack构建”的bug时能够快速察觉。
+
+二是virtual文件虽然只是一个文件，但构建时会被多个entry使用，所以本质上还需要当作多个文件来对待，因此virtual文件中的每个toast或dialog都建议使用组件以减少构建后的包体积。
+
+三是这种方式对于性能的影响，因为它为每个页面都添加了所有页面公用的弹窗等组件，所以对于未用到这些组件的页面无疑是带来的额外的性能负担。此外对于每个页面多一层组件的包装也带来了额外的数据负担，而mpvue本身的性能又不太理想，所以追求开发效率的同时也需要考虑到可能带来的潜在性能影响。
+
+最后便是virtualModule的滥用可能会造成混乱，所以需要慎重选择它的使用场景。
+
+全文结束，感谢阅读。
