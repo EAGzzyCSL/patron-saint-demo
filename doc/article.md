@@ -438,3 +438,55 @@ webpack.base.conf中也做同样改动:
 再次`npm start`，可以看到每个页面都在自身毫无改动的情况下拥有了一个自定义的导航栏，如果后续有与导航栏相关的交互逻辑，只需要添加相应事件的响应方法即可。
 
 这种改进版方案不解决了套路代码的copy，同时也可以从容应对后期的扩展，添加新的全局弹窗等各种只需要在PatronSaint.virtual.vue中操作，而不需要为此对每个页面做逐一修改。
+
+### 实现toast与dialog
+
+基于前面navigation的思路，可以很快实现全局的toast和dialog，这里不再赘述，大概代码如下，详细代码可以参看对应的commit。
+
+```html
+<template>
+  <div class="index">
+    <span>this is page index</span>
+    <button
+      @click="handleToMine"
+    >to page Mine</button>
+    <button
+      @click="handleShowToast"
+    >show toast</button>
+    <button
+      @click="handleShowDialog"
+    >show Dialog</button>
+  </div>
+</template>
+
+<script>
+import PatronSaintFactory from '@/patronSaint/PatronSaintFactory'
+
+export default PatronSaintFactory({
+  methods: {
+    handleToMine () {
+      wx.navigateTo({
+        url: '/pages/Mine/Mine'
+      })
+    },
+    handleShowToast () {
+      this.$ps.showToast({
+        title: 'this is a toast'
+      })
+    },
+    handleShowDialog () {
+      this.$ps.showDialog({
+        title: 'PatronSaint Dialog',
+        content: 'this is a dialog'
+      })
+    }
+  }
+})
+</script>
+```
+
+commit中的代码中还实现了一个全局的登录器，保障用户登录后（获取token后）才挂载页面，如果登录失败则展示重新登录按钮，这样页面只需要维护纯自身的逻辑而不再关心登录相关操作。
+
+### scroll
+
+wip
