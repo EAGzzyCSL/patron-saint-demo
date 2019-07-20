@@ -149,3 +149,63 @@ app.$mount()
 如果webpack没有报错且构建后的代码可以正常运行，那么删掉main.js的目标至此达成。
 
 由此可以发现VirtualModuleWebpackPlugin十分适合解决webpack多entry构建且每个entry入口文件雷同情况下需要copy多个入口文件的场景。但需要注意的是，由于VirtualModuleWebpackPlugin是通过将virtual文件作为缓存提供给webpack，因此**virtual文件的变动并不会触发webpack的更新**，但实际开发中入口文件变动频率极低，所以这一问题可以忽略之。
+
+## 将virtual文件从webpack配置中独立
+
+直接在plugin定义中声明contents虽然简单直观，但缩进和后续的维护都不方便，因此可以通过一些辅助方法将它作为独立的js文件。
+
+新建`pageEntry.virtual`和`replacer`文件：
+
+```text
+src/patronSaint/
+├── pageEntry.virtual.js
+└── replacer.js
+```
+
+pageEntry的内容即为main.js内容的模板，文件名中添加了`.virtual`以区分于普通文件。
+
+```javascript
+import Vue from 'vue'
+import App from './$PAGE_NAME$.vue'
+const app = new Vue(App)
+app.$mount()
+```
+
+`$PAGE_NAME$`是我临时定义的一种模板语法，为了方便查找替换。
+
+replacer负责执行模板的替换：
+
+```javascript
+var fs = require('fs')
+
+module.exports = (fileName, options = {}) => {
+  try {
+    const sourceCode = fs.readFileSync(`${__dirname}/${fileName}.js`, 'utf-8')
+    return Object.entries(options).reduce(
+      (targetCode, [origin, target]) =>
+        targetCode.replace(new RegExp(`\\$${origin}\\$`, 'g'), target),
+      sourceCode
+    )
+  } catch (e) {
+    console.error(e)
+  }
+  return ''
+}
+```
+
+修改`webpack.base.conf.js`：
+
+```javascript
+const replacer = require('../src/patronSaint/replacer')
+
+...pages.map(pageName => new VirtualModuleWebpackPlugin({
+  moduleName: `./src/pages/${pageName}/${pageName}.js`,
+  contents: replacer('pageEntry.virtual.js', {
+    PAGE_NAME: pageName,
+  }),
+})),
+```
+
+再次执构建，一切ok。
+
+至此VirtualModuleWebpackPlugin便可以很方便在项目中使用，独立的virtual文件后续的维护与修改和普通js文件体验基本相同。

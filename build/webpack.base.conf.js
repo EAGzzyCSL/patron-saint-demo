@@ -10,6 +10,8 @@ var CopyWebpackPlugin = require('copy-webpack-plugin')
 
 const VirtualModuleWebpackPlugin = require('virtual-module-webpack-plugin')
 
+const replacer = require('../src/patronSaint/replacer')
+
 function resolve (dir) {
   return path.join(__dirname, '..', dir)
 }
@@ -108,12 +110,9 @@ let baseWebpackConfig = {
   plugins: [
     ...pages.map(pageName => new VirtualModuleWebpackPlugin({
       moduleName: `./src/pages/${pageName}/${pageName}.js`,
-      contents: 
-`import Vue from 'vue'
-import App from './${pageName}.vue'
-const app = new Vue(App)
-app.$mount()
-`,
+      contents: replacer('pageEntry.virtual.js', {
+        PAGE_NAME: pageName,
+      }),
     })),
     // api 统一桥协议方案
     new webpack.DefinePlugin({
