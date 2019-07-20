@@ -30,6 +30,8 @@ const pagesEntry = pages.reduce((acc, pageName) => ({
 
 const entry = Object.assign({}, appEntry, pagesEntry)
 
+const kebabCase = str => str.split(/(?=[A-Z])/).join('-').toLowerCase()
+
 let baseWebpackConfig = {
   // 如果要自定义生成的 dist 目录里面的文件路径，
   // 可以将 entry 写成 {'toPath': 'fromPath'} 的形式，
@@ -109,10 +111,15 @@ let baseWebpackConfig = {
   },
   plugins: [
     ...pages.map(pageName => new VirtualModuleWebpackPlugin({
-      moduleName: `./src/pages/${pageName}/${pageName}.js`,
-      contents: replacer('pageEntry.virtual.js', {
+      moduleName: `./src/pages/${pageName}/PatronSaint.vue`,
+      contents: replacer('PatronSaint.virtual.vue', {
         PAGE_NAME: pageName,
+        KEBAB_PAGE_NAME: kebabCase(pageName),
       }),
+    })),
+    ...pages.map(pageName => new VirtualModuleWebpackPlugin({
+      moduleName: `./src/pages/${pageName}/${pageName}.js`,
+      contents: replacer('pageEntry.virtual.js'),
     })),
     // api 统一桥协议方案
     new webpack.DefinePlugin({

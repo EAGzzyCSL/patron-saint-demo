@@ -367,3 +367,74 @@ npm install node-sass sass-loader --SD
 ```
 
 mpvue的模板是有sass的对应配置的，但package.json中并没有把它作为依赖，所以这里安装后无需配置即可使用。
+
+### 实现navigation
+
+首先在app.json的window下添加如下配置以允许使用自定义导航栏
+
+```json
+"navigationStyle": "custom"
+````
+
+添加`PatronSaint.virtual.vue`文件，它将作为每个页面的根组件
+
+```html
+<template>
+  <div class="patron-saint">
+    <div class="nav">简陋的自定义的导航栏</div>
+    <$KEBAB_PAGE_NAME$ />
+  </div>
+</template>
+
+<script>
+import $PAGE_NAME$ from './$PAGE_NAME$.vue'
+
+export default {
+  components: {
+    $PAGE_NAME$
+  }
+}
+</script>
+<style>
+.nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 4em;
+  color: white;
+  background-color: gray;
+}
+</style>
+```
+
+对应在webpack.base.conf需要中添加如下内容:
+
+```javascript
+...pages.map(pageName => new VirtualModuleWebpackPlugin({
+  moduleName: `./src/pages/${pageName}/PatronSaint.vue`,
+  contents: replacer('PatronSaint.virtual.vue', {
+    PAGE_NAME: pageName,
+    KEBAB_PAGE_NAME: kebabCase(pageName),
+  }),
+}))
+```
+
+同时由于PatronSaint作为了根组件，pageEntry.virtual.js中也需要做对应修改:
+
+```diff
+- import App from './$PAGE_NAME$.vue'
++ import App from './PatronSaint.vue'
+```
+
+webpack.base.conf中也做同样改动:
+
+```javascript
+...pages.map(pageName => new VirtualModuleWebpackPlugin({
+  moduleName: `./src/pages/${pageName}/${pageName}.js`,
+  contents: replacer('pageEntry.virtual.js'),
+})),
+```
+
+再次`npm start`，可以看到每个页面都在自身毫无改动的情况下拥有了一个自定义的导航栏，如果后续有与导航栏相关的交互逻辑，只需要添加相应事件的响应方法即可。
+
+这种改进版方案不解决了套路代码的copy，同时也可以从容应对后期的扩展，添加新的全局弹窗等各种只需要在PatronSaint.virtual.vue中操作，而不需要为此对每个页面做逐一修改。
